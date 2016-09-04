@@ -1,0 +1,13 @@
+---
+# tasks file for nginx-letsencrypt
+
+- name: apt get update
+  apt: update_cache=yes
+
+- name: Get letsencrypt 
+  git:
+    accept_hostkey: True
+    dest: "{{letsencrypt_client_directory}}"
+    force: yes
+    update: yes
+    repo: https://github.com/letsencrypt/letsencrypt
