@@ -1,3 +1,10 @@
 ---
 # defaults file for nginx-letsencrypt
 letsencrypt_client_location: /opt/letsencrypt_client
+nginx_config_name: default
+nginx_web_root: /var/www/html
+# sites:
+#   - kartan:
+#     domains:
+#       - www.kartan.no
+#       - kartan.no

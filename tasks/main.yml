@@ -1,13 +1,52 @@
 ---
-# tasks file for nginx-letsencrypt
-
 - name: apt get update
   apt: update_cache=yes
 
-- name: Get letsencrypt 
-  git:
-    accept_hostkey: True
-    dest: "{{letsencrypt_client_directory}}"
-    force: yes
-    update: yes
-    repo: https://github.com/letsencrypt/letsencrypt
+- name: Install letsencrypt client (formerly certbot)
+  apt: name=letsencrypt
+
+# - name: Setup to read 
+#   blockinfile: 
+#     dest: /etc/nginx/sites-available/{{site_config_name}}
+#     block: |
+#       location ~ /.well-known {
+#           allow all;
+#       }
+#     insertafter: 
+- name: Insert default template
+  template: src={{nginx_config_name}}.j2 dest=/etc/nginx/sites-available/{{nginx_config_name}}
+  notify: restart nginx
+  
+- name: Run letsencrypt command
+  command: letsencrypt certonly -a webroot --webroot-path={{nginx_web_root}} -d kartan.no -d www.kartan.no -n --agree-tos --email {{letsencrypt_email}}
+  become: yes
+
+- stat: path=/etc/ssl/certs/dhparam.pem
+  register: stat_res
+
+- name: Generate strong Diffie-Hellman Group if it doesnt exists
+  command: openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
+  become: yes
+  when: stat_res.stat.exists == False 
+
+- name: setup ssl-params.conf
+  template: src=ssl_params.j2 dest=/etc/nginx/snippets/ssl-params.conf
+
+- name: setup 
+  template: src=ssl_conf.j2 dest=/etc/nginx/snippets/ssl-{{domain_name}}.conf
+
+- name: Copy file
+  template: src=site dest=/etc/nginx/sites-available/{{domain_name}}
+
+- name: enable site
+  file: src=/etc/nginx/sites-available/{{domain_name}} dest=/etc/nginx/sites-enabled/{{domain_name}} state=link
+  
+- name: Setup cron job which renews the certificate 
+  cron: 
+    name: "{{item.name}}"
+    job: "{{item.job}}"
+  with_items:
+    - name: Renew letsencrypt
+      job: 30 2 * * 1 /usr/bin/letsencrypt renew >> /var/log/le-renew.log
+    - name: Reload nginx after letsencrypt renewal
+      job: 35 2 * * 1 /bin/systemctl reload nginx
