@@ -5,20 +5,13 @@
 - name: Install letsencrypt client (formerly certbot)
   apt: name=letsencrypt
 
-# - name: Setup to read 
-#   blockinfile: 
-#     dest: /etc/nginx/sites-available/{{site_config_name}}
-#     block: |
-#       location ~ /.well-known {
-#           allow all;
-#       }
-#     insertafter: 
+
 - name: Insert default template
   template: src={{nginx_config_name}}.j2 dest=/etc/nginx/sites-available/{{nginx_config_name}}
   notify: restart nginx
   
 - name: Run letsencrypt command
-  command: letsencrypt certonly -a webroot --webroot-path={{nginx_web_root}} -d kartan.no -d www.kartan.no -n --agree-tos --email {{letsencrypt_email}}
+  command: letsencrypt certonly -a webroot --webroot-path={{nginx_web_root}} -d {{domain_name}} -d www.{{domain_name}} -n --agree-tos --email {{letsencrypt_email}}
   become: yes
 
 - stat: path=/etc/ssl/certs/dhparam.pem
@@ -28,7 +21,7 @@
   command: openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
   become: yes
   when: stat_res.stat.exists == False 
-
+  
 - name: setup ssl-params.conf
   template: src=ssl_params.j2 dest=/etc/nginx/snippets/ssl-params.conf
 
