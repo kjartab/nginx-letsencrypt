@@ -36,7 +36,7 @@
   template: src=ssl_conf.j2 dest=/etc/nginx/snippets/ssl-{{domain_name}}.conf
 
 - name: Copy file
-  template: src=site dest=/etc/nginx/sites-available/{{domain_name}}
+  template: src={{domain_name}}.j2 dest=/etc/nginx/sites-available/{{domain_name}}
 
 - name: enable site
   file: src=/etc/nginx/sites-available/{{domain_name}} dest=/etc/nginx/sites-enabled/{{domain_name}} state=link
