@@ -1,12 +1,3 @@
 ---
-# defaults file for nginx-letsencrypt
-letsencrypt_client_directory: /opt/letsencrypt_client
-letsencrypt_live_directory: /etc/letsencrypt/live
-letsencrypt_rsa_key_size: 2048
-
-# letsencrypt_domains: 
-#   - www.yourdomain.com
-#   - yourdomain.com
-
-# letsencrypt_email: youremail@gmail.com
-# letsencrypt_webroot: /var/www/{{letsencrypt_domains[0]}}
+nginx_config_name: default
+nginx_web_root: /var/www/html
