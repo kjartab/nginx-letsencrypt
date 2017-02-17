@@ -1,13 +1,56 @@
 ---
-# tasks file for nginx-letsencrypt
+
+# - name: Check if https is already enabled
+#   uri: 
+#     url: https://{{letsencrypt_domain_name}}
+#     status_code: 200
 
 - name: apt get update
   apt: update_cache=yes
 
-- name: Get letsencrypt 
-  git:
-    accept_hostkey: True
-    dest: "{{letsencrypt_client_directory}}"
-    force: yes
-    update: yes
-    repo: https://github.com/letsencrypt/letsencrypt
+- name: install packages
+  apt: name={{item}}
+  with_items:
+  - openssl
+  - letsencrypt
+
+- name: Ensure app config folder for domain exists
+  file: path=/etc/nginx/conf.d/{{letsencrypt_domain_name}} state=directory
+
+- name: Ensure live directory for letsencrypt exists
+  file: path={{letsencrypt_live_directory}} state=directory
+
+- name: Ensure snippets folder exists
+  file: path=/etc/nginx/snippets state=directory
+
+- name: SSL certificates directory
+  file: path=/etc/ssl/certs state=directory
+
+- name: www folder
+  file: path=/var/www state=directory
+
+- name: www app folder
+  file: path=/var/www/{{letsencrypt_domain_name}} state=directory
+
+- copy: src=ssl-params.conf dest=/etc/nginx/snippets/ssl-params.conf 
+
+- template: src=site_pre_config.j2 dest=/etc/nginx/sites-available/{{letsencrypt_domain_name}}
+- file: src=/etc/nginx/sites-available/default dest=/etc/nginx/sites-enabled/{{letsencrypt_domain_name}} state=link
+
+- service: name=nginx state=restarted
+
+# - name: Run command
+#   shell: letsencrypt certonly --agree-tos --rsa-key-size {{letsencrypt_rsa_key_size}} -a webroot --webroot-path=/var/www/{{letsencrypt_domain_name}}  -d {{ letsencrypt_domain_name }} -d {{ letsencrypt_domain_alternatives | join(" -d ")}}  --email {{ letsencrypt_email }}
+  
+- name: Copy SSL snippet
+  template: src=ssl_snippet.j2 dest=/etc/nginx/snippets/ssl-{{letsencrypt_domain_name}}.conf
+
+- name: Site config
+  template: src=site_config.j2 dest=/etc/nginx/sites-available/{{letsencrypt_domain_name}}
+
+- name: enable site config
+  file: src=/etc/nginx/sites-available/{{letsencrypt_domain_name}} dest=/etc/nginx/sites-enabled/{{letsencrypt_domain_name}} group=www-data state=link
+  
+- service: name=nginx state=restarted
+
+- cron: name="renew certificate" weekday="1" minute=0 hour=12 user="root" job="YUMINTERACTIVE=0 /usr/bin/letsencrypt renew"
