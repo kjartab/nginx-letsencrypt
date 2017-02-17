@@ -5,7 +5,6 @@
 - name: Install letsencrypt client (formerly certbot)
   apt: name=letsencrypt
 
-
 - name: Insert default template
   template: src={{nginx_config_name}}.j2 dest=/etc/nginx/sites-available/{{nginx_config_name}}
   notify: restart nginx
