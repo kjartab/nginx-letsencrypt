@@ -8,20 +8,23 @@
 - name: Insert template presetup
   template: src=site_pre_config.j2 dest=/etc/nginx/sites-available/{{letsencrypt_domain_name}}
 
+- name: Ensure directory exists
+  file: path=/var/www/{{letsencrypt_domain_name}} state=directory
+
 - file: src=/etc/nginx/sites-available/{{letsencrypt_domain_name}} dest=/etc/nginx/sites-enabled/{{letsencrypt_domain_name}} state=link
     
 - name: restart
   service: name=nginx state=restarted
-
-- name: Run letsencrypt command
-  command: letsencrypt certonly -a webroot --webroot-path={{nginx_web_root}} -d {{letsencrypt_domain_name}} -d www.{{letsencrypt_domain_name}} -n --agree-tos --email {{letsencrypt_email}}
+  
+- name: Run letsencrypt
+  command: letsencrypt certonly -a webroot --webroot-path=/var/www/{{letsencrypt_domain_name}} -d {{letsencrypt_domain_name}} -n --agree-tos --email {{letsencrypt_email}}
   
 - stat: path=/etc/ssl/certs/dhparam.pem
   register: stat_res
 
 - name: Generate strong Diffie-Hellman Group if it doesnt exists
   command: openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
-  when: stat_res.stat.exists == False 
+  when: stat_res.stat.exists == False
   
 - name: setup ssl-params.conf
   template: src=ssl_params.j2 dest=/etc/nginx/snippets/ssl-params.conf
@@ -30,7 +33,7 @@
   template: src=ssl_conf.j2 dest=/etc/nginx/snippets/ssl-{{letsencrypt_domain_name}}.conf
 
 - name: Copy file
-  template: src={{letsencrypt_domain_name}}.j2 dest=/etc/nginx/sites-available/{{letsencrypt_domain_name}}
+  template: src=site_config.j2 dest=/etc/nginx/sites-available/{{letsencrypt_domain_name}}
 
 - name: enable site
   file: src=/etc/nginx/sites-available/{{letsencrypt_domain_name}} dest=/etc/nginx/sites-enabled/{{letsencrypt_domain_name}} state=link
@@ -44,3 +47,6 @@
       job: 30 2 * * 1 /usr/bin/letsencrypt renew >> /var/log/le-renew.log
     - name: Reload nginx after letsencrypt renewal
       job: 35 2 * * 1 /bin/systemctl reload nginx
+
+- name: reload nginx
+  service: name=nginx state=reloaded

@@ -3,7 +3,7 @@ server {
         listen 80;
         listen [::]:80;
 
-        server_name {{letsencrypt_domain_name}} www.{{letsencrypt_domain_name}}
+        server_name {{letsencrypt_domain_name}};
  
         root /var/www/{{letsencrypt_domain_name}};
 
