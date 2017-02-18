@@ -4,34 +4,36 @@
 
 - name: Install letsencrypt client (formerly certbot)
   apt: name=letsencrypt
-
-- name: Insert default template
-  template: src={{nginx_config_name}}.j2 dest=/etc/nginx/sites-available/{{nginx_config_name}}
-  notify: restart nginx
   
-- name: Run letsencrypt command
-  command: letsencrypt certonly -a webroot --webroot-path={{nginx_web_root}} -d {{domain_name}} -d www.{{domain_name}} -n --agree-tos --email {{letsencrypt_email}}
-  become: yes
+- name: Insert template presetup
+  template: src=site_pre_config.j2 dest=/etc/nginx/sites-available/{{letsencrypt_domain_name}}
 
+- file: src=/etc/nginx/sites-available/{{letsencrypt_domain_name}} dest=/etc/nginx/sites-enabled/{{letsencrypt_domain_name}} state=link
+    
+- name: restart
+  service: name=nginx state=restarted
+
+- name: Run letsencrypt command
+  command: letsencrypt certonly -a webroot --webroot-path={{nginx_web_root}} -d {{letsencrypt_domain_name}} -d www.{{letsencrypt_domain_name}} -n --agree-tos --email {{letsencrypt_email}}
+  
 - stat: path=/etc/ssl/certs/dhparam.pem
   register: stat_res
 
 - name: Generate strong Diffie-Hellman Group if it doesnt exists
   command: openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
-  become: yes
   when: stat_res.stat.exists == False 
   
 - name: setup ssl-params.conf
   template: src=ssl_params.j2 dest=/etc/nginx/snippets/ssl-params.conf
 
 - name: setup 
-  template: src=ssl_conf.j2 dest=/etc/nginx/snippets/ssl-{{domain_name}}.conf
+  template: src=ssl_conf.j2 dest=/etc/nginx/snippets/ssl-{{letsencrypt_domain_name}}.conf
 
 - name: Copy file
-  template: src={{domain_name}}.j2 dest=/etc/nginx/sites-available/{{domain_name}}
+  template: src={{letsencrypt_domain_name}}.j2 dest=/etc/nginx/sites-available/{{letsencrypt_domain_name}}
 
 - name: enable site
-  file: src=/etc/nginx/sites-available/{{domain_name}} dest=/etc/nginx/sites-enabled/{{domain_name}} state=link
+  file: src=/etc/nginx/sites-available/{{letsencrypt_domain_name}} dest=/etc/nginx/sites-enabled/{{letsencrypt_domain_name}} state=link
   
 - name: Setup cron job which renews the certificate 
   cron: 

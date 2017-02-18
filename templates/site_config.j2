@@ -6,15 +6,15 @@ server {
 
     index index.html;
 
-    root /var/www/{{letsencrypt_domain_name}}{{default_site}};
+    root /var/www/{{letsencrypt_domain_name}};
 
     listen 443 ssl;
 
-    server_name {{letsencrypt_domain_name}} {{letsencrypt_domain_alternatives | join(" ") }};
+    server_name {{letsencrypt_domain_name}} www.{{letsencrypt_domain_name}};
 
     include /etc/nginx/snippets/ssl-{{letsencrypt_domain_name}}.conf;
     include /etc/nginx/snippets/ssl-params.conf;
-
+    
     include /etc/nginx/conf.d/{{letsencrypt_domain_name}}/*.conf;
     
 }
@@ -22,7 +22,7 @@ server {
 server {
     listen 80;
     listen [::]:80;
-    server_name {{letsencrypt_domain_name}} {{letsencrypt_domain_alternatives | join(" ")}};
+    server_name {{letsencrypt_domain_name}} www.{{letsencrypt_domain_name}};
     return 301 https://$host$request_uri;
 }
 
