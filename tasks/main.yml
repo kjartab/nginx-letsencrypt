@@ -33,7 +33,7 @@
   template: src=ssl_conf.j2 dest=/etc/nginx/snippets/ssl-{{letsencrypt_domain_name}}.conf
 
 - name: Copy file
-  template: src=site_config.j2 dest=/etc/nginx/sites-available/{{letsencrypt_domain_name}}
+  template: src={{nginx_config_name}} dest=/etc/nginx/sites-available/{{letsencrypt_domain_name}}
 
 - name: enable site
   file: src=/etc/nginx/sites-available/{{letsencrypt_domain_name}} dest=/etc/nginx/sites-enabled/{{letsencrypt_domain_name}} state=link
